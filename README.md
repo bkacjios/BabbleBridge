@@ -1,10 +1,10 @@
 # Babble Bridge
 
-<img width="969" height="596" alt="image" src="https://github.com/user-attachments/assets/d83f63d7-2ec2-437f-8b34-797e87c0d6c4" />
-
 Sideloadable Quest app: reads the Babble tracker over USB serial and serves
 the camera frames as an MJPEG stream on port 8080. The Babble App on the PC
 connects to `http://<quest-ip>:8080` like it would to a wireless tracker.
+
+<img width="969" height="596" alt="image" src="https://github.com/user-attachments/assets/d83f63d7-2ec2-437f-8b34-797e87c0d6c4" />
 
 ## Install
 1. Download `BabbleBridge.apk` from the
@@ -25,10 +25,23 @@ To update, install the newer APK the same way. `-r` keeps your settings.
 5. Put the address in the Babble App's camera field.
 
 ## Statuses
-- "Waiting for tracker on USB": no serial device detected.
-- "Connected, waiting for frames" with 0 FPS: USB is open, but no packets
-  match the expected format (FF A0 FF A1 + uint16 LE length + JPEG).
-- "Streaming": frames are flowing.
+| State | Message |
+|---|---|
+| 🟢 Streaming | Receiving frames from the tracker |
+| 🟡 Connected | Connected, waiting for frames |
+| 🟡 Waiting for tracker | Plug the tracker into the headset |
+| 🟡 Waiting for tracker | Allow USB access in the headset dialog |
+| 🔴 Problem | Allow camera and USB camera access so the app can use the tracker |
+| 🔴 Problem | USB access denied. Replug the tracker or reopen the app to ask again. |
+| 🔴 Problem | Couldn't open the USB device |
+| 🔴 Problem | Couldn't open port 8080: … |
+| ⚪ Stopped | Bridge is off |
+
+If it stays on "Connected" with 0 FPS, the tracker is open but isn't sending
+valid frames. Serial trackers must send `FF A0 FF A1` + uint16 LE length + JPEG.
+
+If the tracker disconnects or stops sending frames, the bridge reconnects to it
+automatically.
 
 ## Building from source
 1. Open this folder in Android Studio and let Gradle sync (uses JitPack for
