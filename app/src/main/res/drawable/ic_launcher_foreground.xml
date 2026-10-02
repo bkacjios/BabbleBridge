@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Smile with tongue (Babble's original path, scaled into the icon) -->
+    <group
+        android:translateX="23.64"
+        android:translateY="31.47"
+        android:scaleX="0.6"
+        android:scaleY="0.6">
+        <path
+            android:pathData="M91,37.65c-0.87,-1.07 -2.44,-1.24 -3.51,-0.38c-4.09,3.29 -8.59,6.04 -13.37,8.16c-0.15,0.07 -0.29,0.13 -0.44,0.2h-0.01c-4.02,1.76 -8.21,3.07 -12.51,3.91c-3.81,0.74 -7.73,1.12 -11.65,1.12c-12.97,0 -25.34,-4.04 -35.76,-11.68c-1.12,-0.82 -2.68,-0.58 -3.5,0.53c-0.81,1.12 -0.57,2.68 0.54,3.5c11.29,8.27 24.68,12.65 38.72,12.65c3.32,0 6.63,-0.25 9.89,-0.75c0.26,3.16 1.18,6.14 1.93,8.3c1.24,3.58 4.97,9.38 10.98,9.38c1.02,0 2.1,-0.17 3.25,-0.54c7.93,-2.57 7.61,-11.27 6.34,-15.51c-0.65,-2.15 -1.63,-5.05 -3.23,-7.73c4.24,-2.1 8.25,-4.66 11.95,-7.64c1.08,-0.87 1.25,-2.44 0.38,-3.52ZM74.02,67.3c-5.31,1.72 -7.94,-5.66 -7.97,-5.73c-1.03,-2.96 -1.59,-5.47 -1.7,-7.61c3.32,-0.76 6.57,-1.79 9.72,-3.08c1.14,1.79 2.15,4.13 3.04,7.11c0.02,0.07 2.22,7.59 -3.09,9.31Z"
+            android:fillColor="#3DDC84"
+            android:strokeColor="#3DDC84"
+            android:strokeWidth="3.33"
+            android:strokeLineJoin="round" />
+    </group>
+    <!-- Wireless arcs -->
+    <path
+        android:pathData="M44,44 Q54,36 64,44"
+        android:strokeColor="#ECEEF2"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M38,36 Q54,24 70,36"
+        android:strokeColor="#ECEEF2"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+</vector>

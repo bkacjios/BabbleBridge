@@ -1,0 +1,30 @@
+# Gradle / build output
+.gradle/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local machine config (SDK path)
+local.properties
+
+# Android Studio: keep shared settings, drop per-user state
+*.iml
+.idea/*
+!.idea/codeStyles/
+.DS_Store
+
+# Signing keys
+*.jks
+*.keystore
+
+# Release signing credentials
+keystore.properties
+
+# Signed release output (Generate Signed Bundle/APK)
+app/release/
+*.aab
+*.apk
+
+# Local design reference, not used by the app
+app/babble.png
