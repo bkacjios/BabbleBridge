@@ -73,6 +73,10 @@ public class BridgeService extends Service {
     private volatile boolean permissionDenied;
     /** Give the plug-in "open with" dialog (which grants access itself) a moment before asking. Tests shorten it. */
     static volatile long permissionGraceMs = 10_000;
+    /** Lets the USB loop's waits end early when a permission answer or app relaunch arrives. */
+    private final Object wake = new Object();
+    /** A wake-up that arrived while the loop wasn't waiting; guarded by {@link #wake}. */
+    private boolean wakePending;
 
     private int framesThisSecond;
     private long secondStart = System.currentTimeMillis();
@@ -102,6 +106,7 @@ public class BridgeService extends Service {
                 UsbDevice d = IntentCompat.getParcelableExtra(intent, UsbManager.EXTRA_DEVICE, UsbDevice.class);
                 Log.i(TAG, "Permission result for " + describe(d) + ": "
                         + (permissionDenied ? "denied" : "granted"));
+                wakeLoop();
             }
         };
         ContextCompat.registerReceiver(this, usbPermissionReceiver,
@@ -137,6 +142,7 @@ public class BridgeService extends Service {
             permissionDenied = false;
             requestedDeviceId = null;
         }
+        wakeLoop();
         return START_STICKY;
     }
 
@@ -191,7 +197,7 @@ public class BridgeService extends Service {
                     permissionDenied = false;
                     deviceSeenAt = 0;
                     setIdle(State.WAITING, "Plug the tracker into the headset");
-                    Thread.sleep(1000);
+                    pause(1000);
                     continue;
                 }
                 UsbInterface video = UvcStream.findStreamingInterface(dev);
@@ -216,7 +222,7 @@ public class BridgeService extends Service {
                         Log.i(TAG, "Requesting permission for " + describe(dev));
                         requestPermission(um, dev);
                     }
-                    Thread.sleep(500);
+                    pause(500);
                     continue;
                 }
                 permissionPending = false;
@@ -226,7 +232,7 @@ public class BridgeService extends Service {
                 if (conn == null) {
                     Log.w(TAG, "openDevice returned null");
                     setIdle(State.ERROR, "Couldn't open the USB device");
-                    Thread.sleep(1000);
+                    pause(1000);
                     continue;
                 }
                 source = video != null ? openUvc(conn, video) : openSerial(dev, conn);
@@ -260,8 +266,8 @@ public class BridgeService extends Service {
             } catch (InterruptedException e) {
                 break;
             } catch (TrackerLost e) {
-                Log.w(TAG, e.getMessage());
-                setIdle(State.WAITING, e.getMessage());
+                Log.w(TAG, e.reason);
+                setIdle(State.WAITING, e.reason);
             } catch (IOException | RuntimeException e) {
                 // Includes SecurityException when Android revokes USB access mid-read.
                 Log.e(TAG, "USB error", e);
@@ -272,7 +278,7 @@ public class BridgeService extends Service {
                 }
             }
             try {
-                Thread.sleep(1000);
+                pause(1000);
             } catch (InterruptedException e) {
                 break;
             }
@@ -295,7 +301,25 @@ public class BridgeService extends Service {
                 off += n;
             }
             tickStats();
-            Thread.sleep(33);
+            pause(33);
+        }
+    }
+
+    /** Waits up to {@code ms}, returning early if {@link #wakeLoop()} is called. */
+    private void pause(long ms) throws InterruptedException {
+        synchronized (wake) {
+            long deadline = System.currentTimeMillis() + ms;
+            for (long left = ms; !wakePending && left > 0; left = deadline - System.currentTimeMillis()) {
+                wake.wait(left);
+            }
+            wakePending = false;
+        }
+    }
+
+    private void wakeLoop() {
+        synchronized (wake) {
+            wakePending = true;
+            wake.notifyAll();
         }
     }
 
@@ -459,6 +483,11 @@ public class BridgeService extends Service {
 
     /** Raised by the read loop's own checks; the message is shown as the status. */
     private static class TrackerLost extends IOException {
-        TrackerLost(String msg) { super(msg); }
+        final String reason;
+
+        TrackerLost(String reason) {
+            super(reason);
+            this.reason = reason;
+        }
     }
 }
