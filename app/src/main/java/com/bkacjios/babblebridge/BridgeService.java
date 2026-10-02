@@ -42,8 +42,8 @@ public class BridgeService extends Service {
     private static final int BAUD = 3_000_000;
     private static final String CHANNEL = "bridge";
     private static final String ACTION_USB_PERMISSION = "com.bkacjios.babblebridge.USB_PERMISSION";
-    /** Reopen the port if the tracker goes silent this long (hung firmware, stale handle). */
-    private static final long STALL_MS = 10_000;
+    /** Reopen the port if the tracker goes silent this long (hung firmware, stale handle). Tests shorten it. */
+    static volatile long stallMs = 10_000;
     private static final String PREFS = "bridge";
     private static final String TAG = "BabbleBridge";
     /** Horizon OS runtime permission for UVC devices, required on top of CAMERA. */
@@ -71,8 +71,8 @@ public class BridgeService extends Service {
     /** A permission dialog is on screen; asking again would stack a second one on top. */
     private volatile boolean permissionPending;
     private volatile boolean permissionDenied;
-    /** Give the plug-in "open with" dialog (which grants access itself) a moment before asking. */
-    private static final long PERMISSION_GRACE_MS = 10000;
+    /** Give the plug-in "open with" dialog (which grants access itself) a moment before asking. Tests shorten it. */
+    static volatile long permissionGraceMs = 10_000;
 
     private int framesThisSecond;
     private long secondStart = System.currentTimeMillis();
@@ -209,7 +209,7 @@ public class BridgeService extends Service {
                     } else if (permissionDenied) {
                         setIdle(State.ERROR, "USB access denied. Replug the tracker or reopen the app to ask again.");
                     } else if (!permissionPending && !id.equals(requestedDeviceId)
-                            && now - deviceSeenAt >= PERMISSION_GRACE_MS) {
+                            && now - deviceSeenAt >= permissionGraceMs) {
                         requestedDeviceId = id;
                         permissionPending = true;
                         setIdle(State.WAITING, "Allow USB access in the headset dialog");
@@ -251,7 +251,7 @@ public class BridgeService extends Service {
                         if (!um.getDeviceList().containsKey(dev.getDeviceName())) {
                             throw new TrackerLost("Tracker disconnected");
                         }
-                        if (now - lastData >= STALL_MS) {
+                        if (now - lastData >= stallMs) {
                             throw new TrackerLost("Tracker stopped sending, reconnecting");
                         }
                     }

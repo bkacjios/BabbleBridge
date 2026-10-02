@@ -125,4 +125,126 @@ public class UvcAssemblerTest {
         assertEquals(1, frames.size());
         assertArrayEquals(f, frames.get(0));
     }
+
+    /** One payload with a 2-byte header carrying the given info bits. */
+    private void payload(int info, byte[] data, int off, int n) {
+        byte[] p = new byte[2 + n];
+        p[0] = 2;
+        p[1] = (byte) info;
+        System.arraycopy(data, off, p, 2, n);
+        assembler.feed(p, p.length);
+    }
+
+    @Test
+    public void ignoresRuntTransfersMidFrame() {
+        byte[] f = jpeg(600, 6);
+        send(Arrays.copyOfRange(f, 0, 300), 0, false);
+        assembler.feed(new byte[]{2}, 1);
+        assembler.feed(new byte[0], 0);
+        send(Arrays.copyOfRange(f, 300, f.length), 0, true);
+        assertEquals(1, frames.size());
+        assertArrayEquals(f, frames.get(0));
+    }
+
+    @Test
+    public void errorBitMidFrameDropsWholeFrame() {
+        byte[] f = jpeg(300, 7);
+        payload(0, f, 0, 100);
+        payload(ERR, f, 100, 100);
+        payload(EOF, f, 200, 100);
+        assertEquals(0, frames.size());
+    }
+
+    @Test
+    public void headerLongerThanTransferDropsFrameInProgress() {
+        byte[] a = jpeg(400, 8);
+        send(Arrays.copyOfRange(a, 0, 200), 0, false);
+        assembler.feed(new byte[]{10, 0, 0, 0}, 4);
+        send(Arrays.copyOfRange(a, 200, a.length), 0, true);
+        assertEquals(0, frames.size());
+
+        byte[] b = jpeg(400, 9);
+        send(b, FID, true);
+        assertEquals(1, frames.size());
+        assertArrayEquals(b, frames.get(0));
+    }
+
+    @Test
+    public void headerLengthAboveTwelveIsRejected() {
+        byte[] f = jpeg(300, 10);
+        sendWithHeader(f, 0, true, 13, 64);
+        assertEquals(0, frames.size());
+        send(f, FID, true);
+        assertEquals(1, frames.size());
+    }
+
+    @Test
+    public void truncatedFrameIsDroppedOnFidToggle() {
+        byte[] a = jpeg(500, 11);
+        byte[] b = jpeg(500, 12);
+        send(Arrays.copyOfRange(a, 0, 250), 0, false);
+        send(b, FID, true);
+        assertEquals(1, frames.size());
+        assertArrayEquals(b, frames.get(0));
+    }
+
+    @Test
+    public void frameMissingEoiIsDroppedEvenWithEofBit() {
+        byte[] a = jpeg(500, 13);
+        send(Arrays.copyOfRange(a, 0, a.length - 1), 0, true);
+        assertEquals(0, frames.size());
+    }
+
+    @Test
+    public void headerOnlyPayloadCanCarryEof() {
+        byte[] f = jpeg(500, 14);
+        send(f, 0, false);
+        payload(0, new byte[0], 0, 0);
+        assertEquals(0, frames.size());
+        payload(EOF, new byte[0], 0, 0);
+        assertEquals(1, frames.size());
+        assertArrayEquals(f, frames.get(0));
+    }
+
+    @Test
+    public void eofSeparatesFramesWithSameFid() {
+        byte[] a = jpeg(300, 15);
+        byte[] b = jpeg(350, 16);
+        send(a, 0, true);
+        send(b, 0, true);
+        assertEquals(2, frames.size());
+        assertArrayEquals(a, frames.get(0));
+        assertArrayEquals(b, frames.get(1));
+    }
+
+    @Test
+    public void growsForFramesLargerThanInitialBuffer() {
+        byte[] f = jpeg(200_000, 17);
+        sendWithHeader(f, 0, true, 12, 16 * 1024);
+        assertEquals(1, frames.size());
+        assertArrayEquals(f, frames.get(0));
+    }
+
+    @Test
+    public void readsOnlyTheTransferredBytes() {
+        byte[] f = jpeg(50, 18);
+        byte[] p = new byte[2 + f.length + 20];
+        p[0] = 2;
+        p[1] = EOF;
+        System.arraycopy(f, 0, p, 2, f.length);
+        Arrays.fill(p, 2 + f.length, p.length, (byte) 0x55);
+        assembler.feed(p, 2 + f.length);
+        assertEquals(1, frames.size());
+        assertArrayEquals(f, frames.get(0));
+    }
+
+    @Test
+    public void emittedFramesAreCopies() {
+        byte[] a = jpeg(300, 19);
+        byte[] b = jpeg(300, 20);
+        send(a, 0, true);
+        send(b, FID, true);
+        assertArrayEquals(a, frames.get(0));
+        assertArrayEquals(b, frames.get(1));
+    }
 }

@@ -2,6 +2,7 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
+    jacoco
 }
 
 // Release signing comes from keystore.properties locally or RELEASE_* env vars in CI.
@@ -38,6 +39,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
@@ -47,10 +51,24 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
     implementation("androidx.core:core:1.19.1")
     implementation("com.github.mik3y:usb-serial-for-android:3.8.0")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.17")
+    testImplementation("org.mockito:mockito-core:5.24.0")
+    testImplementation("androidx.test:core:1.7.0")
+}
+
+tasks.withType<Test>().configureEach {
+    extensions.configure<JacocoTaskExtension> {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
+    }
 }
