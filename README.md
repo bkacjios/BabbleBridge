@@ -1,5 +1,7 @@
 # Babble Bridge
 
+<img width="969" height="596" alt="image" src="https://github.com/user-attachments/assets/d83f63d7-2ec2-437f-8b34-797e87c0d6c4" />
+
 Sideloadable Quest app: reads the Babble tracker over USB serial and serves
 the camera frames as an MJPEG stream on port 8080. The Babble App on the PC
 connects to `http://<quest-ip>:8080` like it would to a wireless tracker.
